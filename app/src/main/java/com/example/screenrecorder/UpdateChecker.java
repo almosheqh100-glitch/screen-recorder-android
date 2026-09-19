@@ -18,8 +18,8 @@ public final class UpdateChecker {
     HttpURLConnection c=(HttpURLConnection)new URL(API).openConnection();
     c.setRequestProperty("Accept","application/vnd.github+json");c.setRequestProperty("User-Agent","ScreenRecorder-Android");c.setConnectTimeout(8000);c.setReadTimeout(8000);
     if(c.getResponseCode()!=200)throw new IOException("HTTP "+c.getResponseCode());
-    String json=read(c.getInputStream());JSONObject release=new JSONObject(json);String tag=release.getString("tag_name");int latest=parse(tag);
-    new Handler(Looper.getMainLooper()).post(()->{if(latest>BuildConfig.VERSION_CODE)show(activity,release.optString("name",tag),release.optString("html_url",RELEASES));else if(userRequested)toast(activity,"لديك أحدث إصدار");});
+    String json=read(c.getInputStream());JSONObject release=new JSONObject(json);String tag=release.getString("tag_name");int latest=parse(tag);long current=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).getLongVersionCode();
+    new Handler(Looper.getMainLooper()).post(()->{if(latest>current)show(activity,release.optString("name",tag),release.optString("html_url",RELEASES));else if(userRequested)toast(activity,"لديك أحدث إصدار");});
    }catch(Exception e){if(userRequested)new Handler(Looper.getMainLooper()).post(()->toast(activity,"تعذر التحقق من التحديث الآن"));}
   }).start();
  }
