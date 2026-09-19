@@ -21,8 +21,7 @@ public class ScreenRecordService extends Service {
  private MediaProjection projection;
  private MediaRecorder recorder;
  private VirtualDisplay display;
- private ParcelFileDescriptor descriptor;
- private Uri output;
+ private java.io.File outputFile;
  private boolean started, cleaning;
  private WindowManager windows;
  private Button overlay;
@@ -48,16 +47,16 @@ public class ScreenRecordService extends Service {
    double scale=Math.min(1.0,1080.0/Math.min(metrics.widthPixels,metrics.heightPixels));
    int width=((int)(metrics.widthPixels*scale)/2)*2, height=((int)(metrics.heightPixels*scale)/2)*2;
    filename="record_"+new SimpleDateFormat("yyyyMMdd_HHmmss_SSS",Locale.US).format(new Date())+".mp4";
-   ContentValues values=new ContentValues(); values.put(MediaStore.Video.Media.DISPLAY_NAME,filename);values.put(MediaStore.Video.Media.MIME_TYPE,"video/mp4");values.put(MediaStore.Video.Media.RELATIVE_PATH,Environment.DIRECTORY_MOVIES+"/ScreenRecords");values.put(MediaStore.Video.Media.IS_PENDING,1);
-   output=getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,values);
-   if(output==null)throw new IllegalStateException("تعذر إنشاء ملف الفيديو");
-   descriptor=getContentResolver().openFileDescriptor(output,"w");
-   if(descriptor==null)throw new IllegalStateException("تعذر فتح ملف الفيديو");
+   java.io.File base=getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+   if(base==null)throw new IllegalStateException("تعذر الوصول إلى مساحة التطبيق");
+   java.io.File directory=new java.io.File(base,"ScreenRecords");
+   if(!directory.exists() && !directory.mkdirs())throw new IllegalStateException("تعذر إنشاء مجلد التسجيلات");
+   outputFile=new java.io.File(directory,filename);
    recorder=new MediaRecorder();
    if(mic)recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
    recorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
    recorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);if(mic)recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-   recorder.setVideoSize(width,height);recorder.setVideoEncodingBitRate(6000000);recorder.setVideoFrameRate(30);recorder.setOutputFile(descriptor.getFileDescriptor());recorder.prepare();
+   recorder.setVideoSize(width,height);recorder.setVideoEncodingBitRate(6000000);recorder.setVideoFrameRate(30);recorder.setOutputFile(outputFile.getAbsolutePath());recorder.prepare();
    display=projection.createVirtualDisplay("ScreenRecord",width,height,metrics.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,recorder.getSurface(),null,null);
    recorder.start();started=true;recording=true;starting=false;message="جارٍ تسجيل الشاشة";
    showOverlay();
@@ -77,8 +76,7 @@ public class ScreenRecordService extends Service {
    if(recorder!=null){try{if(started){recorder.stop();valid=true;}}catch(RuntimeException e){message="لم يُحفظ التسجيل؛ قد تكون مدته قصيرة جدًا.";}finally{try{recorder.release();}catch(RuntimeException ignored){}recorder=null;}}
    if(display!=null){display.release();display=null;}
    if(projection!=null){projection.stop();projection=null;}
-   if(descriptor!=null){try{descriptor.close();}catch(Exception ignored){}descriptor=null;}
-   if(output!=null){try{if(valid){ContentValues values=new ContentValues();values.put(MediaStore.Video.Media.IS_PENDING,0);getContentResolver().update(output,values,null,null);message="تم الحفظ في Movies/ScreenRecords: "+filename;}else getContentResolver().delete(output,null,null);}catch(RuntimeException e){message="تعذر حفظ الفيديو: "+e.getMessage();}output=null;}
+   if(outputFile!=null){if(valid){message="تم حفظ الفيديو داخل التطبيق: "+filename;}else if(outputFile.exists())outputFile.delete();outputFile=null;}
    recording=false;starting=false;stopForeground(STOP_FOREGROUND_REMOVE);
   }
   super.onDestroy();

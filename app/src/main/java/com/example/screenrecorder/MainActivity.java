@@ -33,10 +33,11 @@ public class MainActivity extends Activity {
   record=new Button(this); box.addView(record); record.setOnClickListener(v -> {
    if(ScreenRecordService.recording) stopService(new Intent(this,ScreenRecordService.class)); else begin();
   });
+  Button library=new Button(this); library.setText("مقاطع الفيديو المسجلة"); box.addView(library); library.setOnClickListener(v -> startActivity(new Intent(this,RecordingsActivity.class)));
   Button update=new Button(this); update.setText("التحقق من التحديث"); box.addView(update); update.setOnClickListener(v -> UpdateChecker.check(this,true));
   Button overlay=new Button(this); overlay.setText("تفعيل زر إيقاف عائم (اختياري)"); box.addView(overlay);
   overlay.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName()))));
-  TextView help=new TextView(this); help.setText("يمكن الإيقاف من الإشعار. التسجيلات في المعرض داخل Movies/ScreenRecords. الصوت المدعوم: الميكروفون فقط."); box.addView(help);
+  TextView help=new TextView(this); help.setText("يمكن الإيقاف من الإشعار. تُحفظ التسجيلات داخل التطبيق. افتح مقاطع الفيديو المسجلة لمشاهدتها. الصوت المدعوم: الميكروفون فقط."); box.addView(help);
   setContentView(box);
   UpdateChecker.check(this,false);
  }
