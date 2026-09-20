@@ -1,10 +1,12 @@
 package com.example.screenrecorder;
 
 import android.app.*;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.ViewGroup;
 import android.widget.*;
+import androidx.core.content.FileProvider;
 import java.io.File;
 import java.text.DateFormat;
 import java.util.*;
@@ -40,6 +42,7 @@ public class RecordingsActivity extends Activity {
    LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);
    CheckBox check=new CheckBox(this);check.setText(format.format(new Date(file.lastModified()))+" — "+formatSize(file.length()));check.setOnCheckedChangeListener((b,on)->updateActions());row.addView(check,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1));
    Button play=new Button(this);play.setText("تشغيل");play.setOnClickListener(v->{player.setVideoPath(file.getAbsolutePath());player.start();});row.addView(play);
+   Button share=new Button(this);share.setText("مشاركة");share.setOnClickListener(v->shareVideo(file));row.addView(share);
    choices.put(check,file);list.addView(row);
   }
   updateActions();
@@ -50,5 +53,14 @@ public class RecordingsActivity extends Activity {
  private void updateActions(){int count=selectedCount();if(deleteSelected!=null){deleteSelected.setEnabled(count>0);deleteSelected.setText(count>0?"حذف المحدد ("+count+")":"حذف المحدد");}if(selectAll!=null)selectAll.setText(allSelected()?"إلغاء تحديد الكل":"تحديد الكل");}
  private void confirmDelete(){int count=selectedCount();if(count==0)return;new AlertDialog.Builder(this).setTitle("حذف المقاطع").setMessage("هل تريد حذف "+count+" من المقاطع نهائيًا؟").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(d,w)->deleteNow()).show();}
  private void deleteNow(){int deleted=0;for(Map.Entry<CheckBox,File> entry:new ArrayList<>(choices.entrySet()))if(entry.getKey().isChecked()&&entry.getValue().delete())deleted++;player.stopPlayback();Toast.makeText(this,"تم حذف "+deleted+" من المقاطع",Toast.LENGTH_SHORT).show();load();}
+ private void shareVideo(File file){
+  try{
+   Intent share=new Intent(Intent.ACTION_SEND);
+   share.setType("video/mp4");
+   share.putExtra(Intent.EXTRA_STREAM,FileProvider.getUriForFile(this,getPackageName()+".fileprovider",file));
+   share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+   startActivity(Intent.createChooser(share,"مشاركة المقطع عبر"));
+  }catch(Exception error){Toast.makeText(this,"تعذرت مشاركة المقطع",Toast.LENGTH_SHORT).show();}
+ }
  private String formatSize(long bytes){return String.format(Locale.getDefault(),"%.1f MB",bytes/1048576.0);}
 }
